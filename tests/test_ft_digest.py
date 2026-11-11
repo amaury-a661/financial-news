@@ -57,6 +57,17 @@ def test_parse_digest_json_fenced_and_wrapped():
     assert content.headlines[0]["title"] == "t"
 
 
+def test_parse_digest_json_control_chars_and_trailing_object():
+    raw = (
+        '{"subject": "s", "headlines": [{"title": "t", "url": "u",'
+        ' "summary": "line one\nline two"}], "podcast_script": "x"}\n'
+        '{"note": "model appended a second object"}'
+    )
+    content = parse_digest_json(raw)
+    assert content.podcast_script == "x"
+    assert "line one\nline two" in content.headlines[0]["summary"]
+
+
 def test_digest_content_rejects_missing_fields():
     try:
         DigestContent.model_validate({"subject": "s"})
