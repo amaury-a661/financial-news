@@ -88,10 +88,17 @@ def parse_digest_json(raw: str) -> DigestContent:
     fence = re.search(r"```(?:json)?\s*(.*?)```", text, re.DOTALL)
     if fence:
         text = fence.group(1).strip()
-    start, end = text.find("{"), text.rfind("}")
-    if start != -1 and end != -1:
-        text = text[start : end + 1]
-    return DigestContent.model_validate(json.loads(text))
+    start = text.find("{")
+    if start == -1:
+        raise workflows.ActivityError("Model response contained no JSON object.")
+    decoder = json.JSONDecoder(strict=False)
+    try:
+        data, _ = decoder.raw_decode(text[start:])
+    except json.JSONDecodeError as err:
+        raise workflows.ActivityError(
+            f"Could not parse the model's JSON response: {err}"
+        ) from err
+    return DigestContent.model_validate(data)
 
 
 def build_email_html(content: DigestContent, date_label: str) -> str:
