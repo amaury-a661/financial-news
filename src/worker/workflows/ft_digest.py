@@ -128,6 +128,11 @@ def build_email_text(content: DigestContent, date_label: str) -> str:
     return "\n".join(lines)
 
 
+@workflows.activity()
+async def get_date_label() -> str:
+    return dt.date.today().strftime("%d %b %Y")
+
+
 @workflows.activity(start_to_close_timeout=dt.timedelta(seconds=120))
 async def fetch_ft_front_page() -> list[Headline]:
     import httpx
@@ -244,10 +249,10 @@ async def send_digest_email(
 class FTDigestWorkflow:
     @workflows.workflow.entrypoint
     async def run(self, input: DigestInput) -> str:
+        date_label = await get_date_label()
         headlines = await fetch_ft_front_page()
         content = await summarize_headlines(headlines, input.max_headlines)
         audio_base64 = await generate_podcast_audio(content.podcast_script)
-        date_label = dt.date.today().strftime("%d %b %Y")
         await send_digest_email(
             recipient=input.recipient_email,
             subject=content.subject,
