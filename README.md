@@ -13,26 +13,51 @@ The email is sent through the workspace **Gmail connector** with
 `on_behalf_of=True`, so it uses the Gmail account of the user who triggers the
 workflow.
 
-## Run it
+## Run it (self-hosted worker)
 
-Start the workflow `ft-financial-digest` from the Mistral Console
-(**Workflows → ft-financial-digest → Start workflow**) or via the API:
+There is no schedule: the workflow only runs when you trigger it, and every
+trigger sends one fresh digest. The worker runs on your own machine and
+registers the workflow `ft-financial-digest` with Mistral's platform — no
+managed deployment or pay-as-you-go plan required.
 
-```bash
-curl -X POST https://api.mistral.ai/v1/workflows/ft-financial-digest/execute \
-  -H "Authorization: Bearer $MISTRAL_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-```
+1. Install Python 3.12+ and [uv](https://docs.astral.sh/uv/), then:
 
-Optional input (defaults shown):
+   ```bash
+   git clone https://github.com/amaury-a661/financial-news
+   cd financial-news
+   uv sync
+   cp .env.example .env   # then set MISTRAL_API_KEY in .env
+   uv run python -m worker.entrypoints.worker
+   ```
 
-```json
-{
-  "recipient_email": "amaury.kezachian@outlook.com",
-  "max_headlines": 8
-}
-```
+2. Keep the worker running. The first start registers the workflow and the
+   deployment `ft-financial-digest` under your account (on-behalf-of workflows
+   require this hardened registration; it happens automatically on first
+   registration).
+
+3. Trigger a run:
+
+   - **Mistral Console**: Workflows → `ft-financial-digest` → **Start
+     workflow**, input `{}` (defaults: digest to `amaury.kezachian@outlook.com`,
+     8 headlines).
+   - **API**:
+
+     ```bash
+     curl -X POST https://api.mistral.ai/v1/workflows/ft-financial-digest/execute \
+       -H "Authorization: Bearer $MISTRAL_API_KEY" \
+       -H "Content-Type: application/json" \
+       -d '{}'
+     ```
+
+The email is sent through the workspace **Gmail connector** with
+`on_behalf_of=True`, so it uses the Gmail account of the user who triggers the
+workflow. The worker must stay running while an execution is in progress.
+
+## Managed deployment (optional)
+
+To run the worker on Mistral Cloud instead of locally, enable pay-as-you-go on
+your organization and create a managed deployment from this repository with
+Dockerfile `deploy/docker/Dockerfile.worker`.
 
 ## Project layout
 
