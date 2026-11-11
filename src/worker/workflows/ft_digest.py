@@ -11,8 +11,6 @@ import json
 import re
 from typing import Any
 
-import httpx
-from bs4 import BeautifulSoup
 from pydantic import BaseModel, Field
 
 import mistralai.workflows as workflows
@@ -65,6 +63,8 @@ class DigestContent(BaseModel):
 
 
 def extract_headlines(html: str, limit: int = 40) -> list[Headline]:
+    from bs4 import BeautifulSoup
+
     soup = BeautifulSoup(html, "html.parser")
     headlines: list[Headline] = []
     seen: set[str] = set()
@@ -130,6 +130,8 @@ def build_email_text(content: DigestContent, date_label: str) -> str:
 
 @workflows.activity(start_to_close_timeout=dt.timedelta(seconds=120))
 async def fetch_ft_front_page() -> list[Headline]:
+    import httpx
+
     async with httpx.AsyncClient(
         headers={"User-Agent": FETCH_USER_AGENT, "Accept-Language": "en-GB,en;q=0.9"},
         follow_redirects=True,
